@@ -81,6 +81,15 @@ SET no_pai  = CONCAT(
     REPEAT('*', LENGTH(no_pai) - 2), -- Substitui o restante do nome por asteriscos
     SUBSTRING(no_pai  , LENGTH(no_pai), 1) -- Mantém a última letra do nome
 );"
+#Estudar anonimizar a tabela profissionais
+#select * from profissional p;
+#
+#UPDATE profissional
+#SET descricao  = CONCAT(
+#    SUBSTRING(descricao  , 1, 1), -- Mantém a primeira letra do nome
+#    REPEAT('*', LENGTH(descricao) - 2), -- Substitui o restante do nome por asteriscos
+#    SUBSTRING(descricao  , LENGTH(descricao), 1) -- Mantém a última letra do nome
+#);
 
 # Executa o comando SQL utilizando o utilitário psql
 #psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "$SQL_COMMAND1"
