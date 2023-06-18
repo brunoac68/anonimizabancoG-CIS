@@ -13,34 +13,6 @@ display_help() {
     exit 1
 }
 
-# Função para instalar o pv
-install_pv() {
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        if command -v apt-get &> /dev/null; then
-            sudo apt-get install pv
-        elif command -v yum &> /dev/null; then
-            sudo yum install pv
-        elif command -v dnf &> /dev/null; then
-            sudo dnf install pv
-        elif command -v zypper &> /dev/null; then
-            sudo zypper install pv
-        else
-            echo "Erro: Gerenciador de pacotes não encontrado. Instale o pv manualmente."
-            exit 1
-        fi
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-        if command -v brew &> /dev/null; then
-            brew install pv
-        else
-            echo "Erro: Homebrew não encontrado. Instale o pv manualmente."
-            exit 1
-        fi
-    else
-        echo "Erro: Sistema operacional não suportado. Instale o pv manualmente."
-        exit 1
-    fi
-}
-
 # Valores padrão
 DB_HOST="localhost"
 DB_PORT="5432"
@@ -87,28 +59,29 @@ if [[ -z $DB_NAME ]] || [[ -z $DB_PASSWORD ]]; then
     display_help
 fi
 
-# Verifica se o pv está instalado
-if ! command -v pv &> /dev/null; then
-    echo "O utilitário 'pv' não foi encontrado. Será realizada a instalação..."
-    install_pv
-fi
-
-# Comando SQL para contar o número de registros na tabela
-SQL_COUNT="SELECT COUNT(*) FROM usuarioigms;"
-
 # Comando SQL para anonimizar os nomes dos usuários
-SQL_COMMAND="UPDATE usuarioigms
+#SQL_COMMAND1="BEGIN;"
+SQL_COMMAND="begin;
+UPDATE usuarioigms
 SET no_usuarioigms = CONCAT(
     SUBSTRING(no_usuarioigms, 1, 1),
     REPEAT('*', LENGTH(no_usuarioigms) - 2),
     SUBSTRING(no_usuarioigms, LENGTH(no_usuarioigms), 1)
+);
+commit;
+UPDATE usuarioigms
+SET no_mae  = CONCAT(
+    SUBSTRING(no_mae  , 1, 1), -- Mantém a primeira letra do nome
+    REPEAT('*', LENGTH(no_mae) - 2), -- Substitui o restante do nome por asteriscos
+    SUBSTRING(no_mae  , LENGTH(no_mae), 1) -- Mantém a última letra do nome
+);
+UPDATE usuarioigms
+SET no_pai  = CONCAT(
+    SUBSTRING(no_pai , 1, 1), -- Mantém a primeira letra do nome
+    REPEAT('*', LENGTH(no_pai) - 2), -- Substitui o restante do nome por asteriscos
+    SUBSTRING(no_pai  , LENGTH(no_pai), 1) -- Mantém a última letra do nome
 );"
 
-# Obtém o total de registros na tabela
-total_records=$(psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -t -c "$SQL_COUNT")
-
-# Executa o comando SQL de anonimização dos nomes dos usuários com a exibição da barra de progresso
-echo "Anonimizando nomes dos usuários..."
-echo "$SQL_COMMAND" | psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME | pv -l -s $total_records -p -t -e
-
-echo "Anonimização concluída com sucesso."
+# Executa o comando SQL utilizando o utilitário psql
+#psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "$SQL_COMMAND1"
+psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "$SQL_COMMAND"
